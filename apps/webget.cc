@@ -1,8 +1,12 @@
+#include "address.hh"
 #include "socket.hh"
 #include "util.hh"
 
 #include <cstdlib>
 #include <iostream>
+#include <regex>
+#include <sstream>
+#include <string>
 
 using namespace std;
 
@@ -16,9 +20,25 @@ void get_URL(const string &host, const string &path) {
     // Then you'll need to print out everything the server sends back,
     // (not just one call to read() -- everything) until you reach
     // the "eof" (end of file).
-
-    cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
-    cerr << "Warning: get_URL() has not been implemented yet.\n";
+    Address addr(host, "http");
+    TCPSocket sock;
+    sock.connect(addr);
+    sock.write("GET " + path + " HTTP/1.1\r\n");
+    sock.write("Host: " + host + "\r\n");
+    sock.write("Connection: close\r\n");
+    sock.write("\r\n");
+    while (!sock.eof()) {
+        std::string content = sock.read(1024 * 1024);
+        std::regex reg("\r\n");
+        std::sregex_token_iterator pos(content.begin(), content.end(), reg, -1);
+        decltype(pos) end;
+        for (; pos != end; ++pos) {
+            std::cout << pos->str() << std::endl;
+        }
+    }
+    sock.close();
+    // cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
+    // cerr << "Warning: get_URL() has not been implemented yet.\n";
 }
 
 int main(int argc, char *argv[]) {
