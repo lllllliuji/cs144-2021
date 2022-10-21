@@ -16,9 +16,15 @@ class ByteStream {
     // all, but if any of your tests are taking longer than a second,
     // that's a sign that you probably want to keep exploring
     // different approaches.
-
+    std::string buf;
+    size_t _capacity;
+    size_t _front{};
+    size_t _rear{};
+    size_t _cur_size{};
+    size_t _read_count{};
+    size_t _write_count{};
+    bool _input_ended{};
     bool _error{};  //!< Flag indicating that the stream suffered an error.
-
   public:
     //! Construct a stream with room for `capacity` bytes.
     ByteStream(const size_t capacity);

@@ -27,14 +27,17 @@ void get_URL(const string &host, const string &path) {
     sock.write("Host: " + host + "\r\n");
     sock.write("Connection: close\r\n");
     sock.write("\r\n");
+    // while (!sock.eof()) {
+    //     std::string content = sock.read(1024 * 1024);
+    //     std::regex reg("\r\n");
+    //     std::sregex_token_iterator pos(content.begin(), content.end(), reg, -1);
+    //     decltype(pos) end;
+    //     for (; pos != end; ++pos) {
+    //         std::cout << pos->str() << std::endl;
+    //     }
+    // }
     while (!sock.eof()) {
-        std::string content = sock.read(1024 * 1024);
-        std::regex reg("\r\n");
-        std::sregex_token_iterator pos(content.begin(), content.end(), reg, -1);
-        decltype(pos) end;
-        for (; pos != end; ++pos) {
-            std::cout << pos->str() << std::endl;
-        }
+        std::cout << sock.read();
     }
     sock.close();
     // cerr << "Function called: get_URL(" << host << ", " << path << ").\n";
