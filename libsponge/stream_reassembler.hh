@@ -3,7 +3,9 @@
 
 #include "byte_stream.hh"
 
+#include <cstddef>
 #include <cstdint>
+#include <set>
 #include <string>
 
 //! \brief A class that assembles a series of excerpts from a byte stream (possibly out of order,
@@ -11,9 +13,49 @@
 class StreamReassembler {
   private:
     // Your code here -- add private members as necessary.
+    using E = std::pair<size_t, std::string>;
+    size_t _unassembled_bytes{};
+    size_t _head_index{0};
+    std::set<E> _auxiliary_cache{};
+    bool _eof{false};
 
     ByteStream _output;  //!< The reassembled in-order byte stream
     size_t _capacity;    //!< The maximum number of bytes
+
+    size_t merge(E &pa, const E &pb) {
+        // 没有交集
+        if (pa.first + pa.second.size() <= pb.first) {
+            return 0;
+        }
+        // pa包含pb
+        if (pa.first + pa.second.size() >= pb.first + pb.second.size()) {
+            return pb.second.size();
+        }
+        // pa与pb有交集
+        size_t start_index = pa.first + pa.second.size() - pb.first;
+        pa.second += pb.second.substr(start_index);
+        return start_index;
+    }
+
+    void assemble_string() {
+        while (!_auxiliary_cache.empty()) {
+            auto it = _auxiliary_cache.begin();
+            if (it->first > _head_index) {
+                break;
+            }
+            std::string str = it->second;
+            size_t write_len = _output.write(str);
+            _auxiliary_cache.erase(it);
+            _unassembled_bytes -= str.size();
+            _head_index += write_len;
+            // 如果当前没有足够的空间
+            if (write_len != str.size()) {
+                auto node = std::make_pair(_head_index, str.substr(write_len));
+                _auxiliary_cache.insert(node);
+                break;
+            }
+        }
+    }
 
   public:
     //! \brief Construct a `StreamReassembler` that will store up to `capacity` bytes.

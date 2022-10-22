@@ -20,8 +20,8 @@ size_t ByteStream::write(const string &data) {
     if (_input_ended) {
         return 0;
     }
-    size_t remain_capcity = remaining_capacity();
-    size_t write_length = min(remain_capcity, data.size());
+    size_t remain_capacity = remaining_capacity();
+    size_t write_length = min(remain_capacity, data.size());
     for (size_t i = 0; i < write_length; i++) {
         buf[_front] = data[i];
         _front = (_front + 1 == _capacity) ? 0 : _front + 1;
