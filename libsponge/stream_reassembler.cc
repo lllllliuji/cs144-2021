@@ -70,7 +70,7 @@ void StreamReassembler::push_substring(const string &data, const size_t index, c
         _auxiliary_cache.insert(node);
         _unassembled_bytes += write_len;
     }
-    // order
+    // reorder
     assemble_string();
     if (empty() && _eof) {
         _output.end_input();

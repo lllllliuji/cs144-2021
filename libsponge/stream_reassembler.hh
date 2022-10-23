@@ -48,12 +48,13 @@ class StreamReassembler {
             _auxiliary_cache.erase(it);
             _unassembled_bytes -= str.size();
             _head_index += write_len;
+            // 没有必要，因为插入的时候已经检测有足够的空间了
             // 如果当前没有足够的空间
-            if (write_len != str.size()) {
-                auto node = std::make_pair(_head_index, str.substr(write_len));
-                _auxiliary_cache.insert(node);
-                break;
-            }
+            // if (write_len != str.size()) {
+            //     auto node = std::make_pair(_head_index, str.substr(write_len));
+            //     _auxiliary_cache.insert(node);
+            //     break;
+            // }
         }
     }
 
