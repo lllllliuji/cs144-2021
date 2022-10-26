@@ -6,8 +6,11 @@
 #include "tcp_segment.hh"
 #include "wrapping_integers.hh"
 
+#include <cstdint>
 #include <functional>
+#include <list>
 #include <queue>
+#include <sys/types.h>
 
 //! \brief The "sender" part of a TCP implementation.
 
@@ -31,6 +34,41 @@ class TCPSender {
 
     //! the (absolute) sequence number for the next byte to be sent
     uint64_t _next_seqno{0};
+
+    // 初始窗口为1字节
+    uint64_t _window_size{1};
+
+    uint64_t _now_time_ms{0};
+
+    using TCPSegItem = std::pair<uint64_t, std::unique_ptr<TCPSegment>>;
+    std::list<TCPSegItem> _tcp_seg_cache{};
+
+    WrappingInt32 _latest_ackno{0};
+
+    unsigned int _retransmission_timeout;
+
+    bool _syned{false};
+
+  private:
+    void remove_acked_seg() {
+        while (!_tcp_seg_cache.empty()) {
+            auto &[last_sendtime, tcp_seg_ptr] = _tcp_seg_cache.front();
+            uint64_t absolute_latest_ackno = unwrap(_latest_ackno, _isn, _next_seqno);
+            uint64_t absolute_right_end_no =
+                unwrap(tcp_seg_ptr->header().seqno + static_cast<uint32_t>(tcp_seg_ptr->length_in_sequence_space()),
+                       _isn,
+                       _next_seqno);
+            if (absolute_latest_ackno >= absolute_right_end_no) {
+                _tcp_seg_cache.pop_front();
+            }
+        }
+    }
+
+    bool compare(WrappingInt32 a, WrappingInt32 b, WrappingInt32 isn, uint64_t checkpoint) const {
+      uint64_t aa = unwrap(a, isn, checkpoint);
+      uint64_t bb = unwrap(b, isn, checkpoint);
+      return aa > bb;
+    }
 
   public:
     //! Initialize a TCPSender
