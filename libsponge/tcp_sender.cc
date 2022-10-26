@@ -30,31 +30,11 @@ TCPSender::TCPSender(const size_t capacity, const uint16_t retx_timeout, const s
     : _isn(fixed_isn.value_or(WrappingInt32{random_device()()}))
     , _initial_retransmission_timeout{retx_timeout}
     , _stream(capacity)
-    , _retransmission_timeout(retx_timeout) {}
+    , _retransmission_timeout(retx_timeout)
+    , _latest_ackno(_isn) {}
 
-uint64_t TCPSender::bytes_in_flight() const {
-    return _next_seqno - _latest_ackno.raw_value();
-    // if (_tcp_seg_cache.empty()) {
-    //     return 0;
-    // }
-    // auto it = std::find_if(_tcp_seg_cache.begin(), _tcp_seg_cache.end(), [&](const auto &item) {
-    //     WrappingInt32 right_end_seqno =
-    //         item.second->header().seqno + static_cast<uint32_t>(item.second->length_in_sequence_space());
-    //     return compare(right_end_seqno, _latest_ackno, _isn, _next_seqno);
-    // });
-    // if (it == _tcp_seg_cache.end()) {
-    //     return 0;
-    // }
-    // uint64_t bytes_in_flight = 0UL;
-    // uint64_t start_absolute_seqno = unwrap((*it).second->header().seqno, _isn, _next_seqno);
-    // uint64_t end_absoulte_seqno = unwrap(_tcp_seg_cache.back().second->header().seqno +
-    //                                          static_cast<uint32_t>(_tcp_seg_cache.back().second->payload().size()),
-    //                                      _isn,
-    //                                      _next_seqno);
-    // bytes_in_flight = end_absoulte_seqno - start_absolute_seqno;
-    // std::cout << "bytes in flight: " << bytes_in_flight << std::endl;
-    // return bytes_in_flight;
-}
+uint64_t TCPSender::bytes_in_flight() const { 
+    return _next_seqno - unwrap(_latest_ackno, _isn, _next_seqno); }
 
 void TCPSender::fill_window() {
     size_t read_size = std::min(_window_size, TCPConfig::MAX_PAYLOAD_SIZE);

@@ -43,9 +43,9 @@ class TCPSender {
     using TCPSegItem = std::pair<uint64_t, std::unique_ptr<TCPSegment>>;
     std::list<TCPSegItem> _tcp_seg_cache{};
 
-    WrappingInt32 _latest_ackno{0};
-
     unsigned int _retransmission_timeout;
+
+    WrappingInt32 _latest_ackno{0};
 
     bool _syned{false};
 
@@ -60,14 +60,16 @@ class TCPSender {
                        _next_seqno);
             if (absolute_latest_ackno >= absolute_right_end_no) {
                 _tcp_seg_cache.pop_front();
+            } else {
+                break;
             }
         }
     }
 
     bool compare(WrappingInt32 a, WrappingInt32 b, WrappingInt32 isn, uint64_t checkpoint) const {
-      uint64_t aa = unwrap(a, isn, checkpoint);
-      uint64_t bb = unwrap(b, isn, checkpoint);
-      return aa > bb;
+        uint64_t aa = unwrap(a, isn, checkpoint);
+        uint64_t bb = unwrap(b, isn, checkpoint);
+        return aa > bb;
     }
 
   public:
