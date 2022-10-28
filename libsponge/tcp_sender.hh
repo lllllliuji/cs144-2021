@@ -49,6 +49,10 @@ class TCPSender {
 
     bool _syned{false};
 
+    bool _fin{false};
+
+    uint64_t _retransmission_count{0};
+
   private:
     void remove_acked_seg() {
         while (!_tcp_seg_cache.empty()) {
