@@ -38,32 +38,7 @@ uint64_t TCPSender::bytes_in_flight() const {
     // std::endl;
     return _next_seqno - unwrap(_latest_ackno, _isn, _next_seqno);
 }
-// void TCPSender::send_seg(uint64_t payload_size) {
-//     uint64_t window_unused_size = _window_size > _window_used_size ? _window_size - _window_used_size : 0;
-//     bool is_syn_seg = _syned == false ? (_syned = true) : false;
-//     bool is_fin_seg = false;
-//     auto content = _stream.read(payload_size);
-//     // 查看有没有空间存放fin seqno
-//     if (_stream.input_ended() && !_fin && content.size() + is_syn_seg < window_unused_size) {
-//         _fin = true;
-//         is_fin_seg = true;
-//     }
-//     TCPSegment tcp_seg;
-//     tcp_seg.payload() = std::move(content);
-//     tcp_seg.header().seqno = wrap(_next_seqno, _isn);
-//     tcp_seg.header().syn = is_syn_seg;
-//     tcp_seg.header().fin = is_fin_seg;
-//     // 如果payload的总的sequence数量为0， 不发送segment
-//     uint64_t total_size = tcp_seg.length_in_sequence_space();
-//     if (total_size == 0) {
-//         return;
-//     }
-//     _window_used_size += total_size;
-//     _next_seqno += total_size;
-//     _segments_out.push(tcp_seg);
-//     std::unique_ptr<TCPSegment> tcp_seg_copy = std::make_unique<TCPSegment>(tcp_seg);
-//     _tcp_seg_cache.push_back(std::make_pair(_now_time_ms, std::move(tcp_seg_copy)));
-// }
+
 void TCPSender::fill_window() {
     if (_window_size == 0 && _window_used_size == 0) {
         TCPSegment tcp_seg;
@@ -143,13 +118,10 @@ void TCPSender::tick(const size_t ms_since_last_tick) {
     _now_time_ms += ms_since_last_tick;
     // 删除已经ack的segment
     remove_acked_seg();
-    // 重传超时，最早的seg
-    // auto it = std::find_if(_tcp_seg_cache.begin(), _tcp_seg_cache.end(), [&](const auto &item) {
-    //     return _now_time_ms - item.first >= _retransmission_timeout;
-    // });
     if (_tcp_seg_cache.empty()) {
         return;
     }
+    // 重传超时，最早的seg
     auto it = _tcp_seg_cache.begin();
     if (_now_time_ms - it->first >= _retransmission_timeout) {
         it->first = _now_time_ms;
