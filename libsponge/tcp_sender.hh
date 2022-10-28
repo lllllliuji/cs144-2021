@@ -38,6 +38,8 @@ class TCPSender {
     // 初始窗口为1字节
     uint64_t _window_size{1};
 
+    uint64_t _window_used_size{0};
+
     uint64_t _now_time_ms{0};
 
     using TCPSegItem = std::pair<uint64_t, std::unique_ptr<TCPSegment>>;
@@ -50,6 +52,8 @@ class TCPSender {
     bool _syned{false};
 
     bool _fin{false};
+
+    bool _fin_sent{false};
 
     uint64_t _retransmission_count{0};
 
@@ -131,6 +135,7 @@ class TCPSender {
     //! \brief relative seqno for the next byte to be sent
     WrappingInt32 next_seqno() const { return wrap(_next_seqno, _isn); }
     //!@}
+    // void send_seg(uint64_t payload_size);
 };
 
 #endif  // SPONGE_LIBSPONGE_TCP_SENDER_HH
