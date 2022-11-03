@@ -30,7 +30,7 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         set_rst_state();
         return;
     }
-    // gives the segment to the TCPReceiver， receiver实现不会在同步之前接受任何报文
+    // gives the segment to the TCPReceiver
     _receiver.segment_received(seg);
     // 如果当前tcp未收到syn报文段并且不是主动发起连接的syn_sent状态，直接返回
     if (auto receiver_state = TCPState::state_summary(_receiver), sender_state = TCPState::state_summary(_sender);
@@ -38,30 +38,18 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
         (receiver_state == TCPReceiverStateSummary::LISTEN && sender_state != TCPSenderStateSummary::SYN_SENT)) {
         return;
     }
-    // else if (receiver_state == TCPReceiverStateSummary::SYN_RECV) {
-    //     _active = true;
-    // }
-    else if (receiver_state == TCPReceiverStateSummary::FIN_RECV && !_sender.stream_in().eof()) {
-        _linger_after_streams_finish = false;
-    }
-    // else if (receiver_state == TCPReceiverStateSummary::FIN_RECV &&
-    //            sender_state == TCPSenderStateSummary::FIN_ACKED && !_linger_after_streams_finish) {
-    //     _active = false;
-    // }
-    // if inbound stream end before outbound strean reach an EOF
-    // if (_receiver.stream_out().input_ended() && !_sender.stream_in().eof()) {
-    //     _linger_after_streams_finish = false;
-    // }
     // inform the sender
     if (seg.header().ack) {
         _sender.ack_received(seg.header().ackno, seg.header().win);
-        // _sender.fill_window();
+    }
+    if (TCPState::state_summary(_receiver) == TCPReceiverStateSummary::FIN_RECV &&
+        TCPState::state_summary(_sender) == TCPSenderStateSummary::SYN_ACKED) {
+        _linger_after_streams_finish = false;
     }
     if (TCPState::state_summary(_receiver) == TCPReceiverStateSummary::FIN_RECV &&
         TCPState::state_summary(_sender) == TCPSenderStateSummary::FIN_ACKED && !_linger_after_streams_finish) {
         _active = false;
     }
-
     if (seg.length_in_sequence_space() > 0) {
         if (!_sender.stream_in().buffer_empty() || TCPState::state_summary(_sender) == TCPSenderStateSummary::CLOSED) {
             _sender.fill_window();
@@ -72,6 +60,8 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     } else if (_receiver.ackno().has_value() && seg.header().seqno == _receiver.ackno().value() - 1) {
         // reponding to keep-alive segment
         _sender.send_empty_segment();
+    } else {
+        _sender.fill_window();
     }
     send_with_ackno_and_win();
 }
@@ -89,7 +79,6 @@ size_t TCPConnection::write(const string &data) {
 void TCPConnection::tick(const size_t ms_since_last_tick) {
     _now_time_ms += ms_since_last_tick;
     _sender.tick(ms_since_last_tick);  // tick会重传sender超时的seg
-    
     // 重传次数太多, 发送reset segment
     if (_sender.consecutive_retransmissions() > TCPConfig::MAX_RETX_ATTEMPTS) {
         // 之前的也别传了
@@ -105,7 +94,7 @@ void TCPConnection::tick(const size_t ms_since_last_tick) {
         TCPState::state_summary(_sender) == TCPSenderStateSummary::FIN_ACKED && _linger_after_streams_finish &&
         _now_time_ms - _seg_received_time_ms >= 10 * _cfg.rt_timeout) {
         _active = false;
-        _linger_after_streams_finish = false;
+        // _linger_after_streams_finish = false;
     }
 }
 

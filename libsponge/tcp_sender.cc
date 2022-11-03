@@ -49,6 +49,9 @@ void TCPSender::fill_window() {
             _fin = true;
             tcp_seg.header().fin = true;
         }
+        if (tcp_seg.length_in_sequence_space() == 0) {
+            return;
+        }
         tcp_seg.header().seqno = wrap(_next_seqno, _isn);
         _next_seqno += 1;
         _window_used_size++;
