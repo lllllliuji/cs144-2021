@@ -45,7 +45,7 @@ void TCPSender::fill_window() {
         if (!_stream.buffer_empty()) {
             auto content = _stream.read(1);
             tcp_seg.payload() = std::move(content);
-        } else if (_stream.input_ended() && !_fin) {
+        } else if (_stream.eof() && !_fin) {
             _fin = true;
             tcp_seg.header().fin = true;
         }
@@ -71,7 +71,7 @@ void TCPSender::fill_window() {
         uint64_t payload_size = std::max(1UL, std::min(window_unused_size - is_syn_seg, TCPConfig::MAX_PAYLOAD_SIZE));
         auto content = _stream.read(payload_size);
         // 查看有没有空间存放fin seqno
-        if (_stream.input_ended() && !_fin && content.size() + is_syn_seg < window_unused_size) {
+        if (_stream.eof() && !_fin && content.size() + is_syn_seg < window_unused_size) {
             _fin = true;
             is_fin_seg = true;
         }
