@@ -32,6 +32,12 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
     }
     // gives the segment to the TCPReceiver
     _receiver.segment_received(seg);
+    // 如果当前tcp未收到syn报文段并且不是主动发起连接的syn_sent状态，直接返回
+    // if (auto receiver_state = TCPState::state_summary(_receiver), sender_state = TCPState::state_summary(_sender);
+    //     receiver_state == TCPReceiverStateSummary::ERROR ||
+    //     (receiver_state == TCPReceiverStateSummary::LISTEN && sender_state != TCPSenderStateSummary::SYN_SENT)) {
+    //     return;
+    // }
     // inform the sender
     if (seg.header().ack) {
         _sender.ack_received(seg.header().ackno, seg.header().win);
@@ -54,6 +60,21 @@ void TCPConnection::segment_received(const TCPSegment &seg) {
             }
         }
     }
+    // if (seg.length_in_sequence_space() > 0) {
+    //     if (!_sender.stream_in().buffer_empty() || TCPState::state_summary(_sender) == TCPSenderStateSummary::CLOSED)
+    //     {
+    //         _sender.fill_window();
+    //     } else {
+    //         // send at least one segment
+    //         _sender.send_empty_segment();
+    //     }
+    // } else if (_receiver.ackno().has_value() && seg.header().seqno == _receiver.ackno().value() - 1) {
+    //     // reponding to keep-alive segment
+    //     _sender.send_empty_segment();
+    // } else if (_receiver.ackno().has_value()) {
+    //     if (!_sender.stream_in().buffer_empty() || )
+    //     _sender.fill_window();
+    // }
     send_with_ackno_and_win();
 }
 
