@@ -113,7 +113,8 @@ void TCPSender::ack_received(const WrappingInt32 ackno, const uint16_t window_si
     _retransmission_count = 0;
     _latest_ackno = ackno;
     remove_acked_seg();
-    std::for_each(_tcp_seg_cache.begin(), _tcp_seg_cache.end(), [&](auto &item) { item.first = _now_time_ms; });
+    if (!_tcp_seg_cache.empty()) _tcp_seg_cache.begin()->first = _now_time_ms;
+    // std::for_each(_tcp_seg_cache.begin(), _tcp_seg_cache.end(), [&](auto &item) { item.first = _now_time_ms; });
 }
 
 //! \param[in] ms_since_last_tick the number of milliseconds since the last call to this method
