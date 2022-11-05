@@ -24,6 +24,7 @@ void get_URL(const string &host, const string &path) {
     // the "eof" (end of file).
     Address addr(host, "http");
     // CS144TCPSocket sock;
+    // FullStackSocket sock;
     TCPSocket sock;
     sock.connect(addr);
     sock.write("GET " + path + " HTTP/1.1\r\n");
